@@ -97,6 +97,7 @@ They are excluded in `.dockerignore` and `.gitignore`.
 
 - Implement the real LIMS connector: API, read-only database, or file-drop import
 - Implement the clinical information importer: HIS/EMR/LIMS/file import
+- Maintain the tumor gene interpretation library through Django admin or `python manage.py seed_interpretation_library`
 - Add scheduled sync task
 - Add operation/audit log for manual corrections
 - Add login and role permissions

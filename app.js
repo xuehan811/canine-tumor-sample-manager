@@ -523,7 +523,7 @@ function renderReports() {
       <div class="lane">
         <h3>${lane} · ${items.length}</h3>
         ${items.map((sample) => `
-          <button class="report-card" data-detail="${escapeHtml(sample.sampleId)}">
+          <button class="report-card" data-report-review="${escapeHtml(sample.sampleId)}">
             <b>${escapeHtml(sample.sampleId)}</b>
             <small>${escapeHtml(sample.dogName)} · ${escapeHtml(sample.tumorType)}</small>
             <span>${escapeHtml(reportActionText(lane))}</span>
@@ -543,6 +543,84 @@ function reportActionText(status) {
     "已同步LIMS": "闭环完成"
   };
   return actions[status] || "查看报告";
+}
+
+function buildReportDraft(sample) {
+  const clinical = sample.clinical || {};
+  const keyVariants = sample.variants.length ? sample.variants : ["未检出明确可报告关键变异"];
+  const actionable = sample.variants.filter((variant) => !/VUS|uncertain/i.test(variant));
+  const conclusion = actionable.length
+    ? `检出 ${actionable.length} 项具有潜在临床意义的肿瘤相关变异，建议结合病理诊断、分期、治疗史和随访计划综合解读。`
+    : "本次检测未检出明确可报告的关键肿瘤相关变异，建议结合临床表现和病理结果持续随访。";
+  const template = "报告生成-513";
+
+  return {
+    template,
+    library: "肿瘤基因解读库（后台维护）",
+    conclusion: sample.qc === "通过" ? conclusion : `样本质控状态为${sample.qc}，正式发布前需完成复核。${conclusion}`,
+    clinicalSummary: [
+      clinical.diagnosis && `临床诊断：${clinical.diagnosis}`,
+      clinical.complaint && `主诉：${clinical.complaint}`,
+      clinical.prognosis && `预后/随访：${clinical.prognosis}`
+    ].filter(Boolean).join("；") || "暂无后台导入的临床摘要。",
+    variants: keyVariants.map((variant) => ({
+      name: variant,
+      interpretation: `${variant} 已进入肿瘤基因解读库匹配流程，报告草稿将结合癌种、证据等级、犬种适用性和临床背景生成解读。`
+    }))
+  };
+}
+
+function openReportReview(sampleId) {
+  const sample = state.samples.find((item) => item.sampleId === sampleId);
+  if (!sample) return;
+  const draft = buildReportDraft(sample);
+  byId("report-review-title").textContent = `${sample.sampleId} · ${sample.dogName}`;
+  byId("report-review-status").innerHTML = `<span class="badge ${badgeClass(sample.report)}">${escapeHtml(sample.report)}</span>`;
+  byId("report-dialog").dataset.sampleId = sample.sampleId;
+  byId("report-review-content").innerHTML = `
+    <section class="review-section">
+      <h3>报告来源</h3>
+      <div class="review-grid">
+        ${kv("模板", draft.template)}
+        ${kv("解读库", draft.library)}
+        ${kv("LIMS ID", sample.limsId || "-")}
+        ${kv("检测项目", sample.panel)}
+        ${kv("样本/部位", sample.site)}
+        ${kv("流程状态", sample.status)}
+        ${kv("质控状态", sample.qc)}
+        ${kv("报告状态", sample.report)}
+      </div>
+    </section>
+    <section class="review-section">
+      <h3>自动报告结论</h3>
+      <p>${escapeHtml(draft.conclusion)}</p>
+    </section>
+    <section class="review-section">
+      <h3>临床摘要</h3>
+      <p>${escapeHtml(draft.clinicalSummary)}</p>
+    </section>
+    <section class="review-section">
+      <h3>变异解读库匹配</h3>
+      <div class="interpretation-list">
+        ${draft.variants.map((variant) => `
+          <article>
+            <b>${escapeHtml(variant.name)}</b>
+            <p>${escapeHtml(variant.interpretation)}</p>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+    <section class="review-section">
+      <h3>审核清单</h3>
+      <div class="review-checklist">
+        <label><input type="checkbox" checked /> LIMS 样本信息已核对</label>
+        <label><input type="checkbox" checked /> QC 可报告性已确认</label>
+        <label><input type="checkbox" ${sample.variants.length ? "checked" : ""} /> 关键变异已完成解读库匹配</label>
+        <label><input type="checkbox" /> 审核人已确认报告结论和限制说明</label>
+      </div>
+    </section>
+  `;
+  byId("report-dialog").showModal();
 }
 
 function countBy(items, getter) {
@@ -817,8 +895,34 @@ function bindEvents() {
       renderClinicalModule(clinicalTarget.dataset.clinical);
       return;
     }
+    const reportTarget = event.target.closest("[data-report-review]");
+    if (reportTarget) {
+      openReportReview(reportTarget.dataset.reportReview);
+      return;
+    }
     const target = event.target.closest("[data-detail]");
     if (target) openDetail(target.dataset.detail);
+  });
+
+  byId("approve-report").addEventListener("click", () => {
+    const sampleId = byId("report-dialog").dataset.sampleId;
+    const sample = state.samples.find((item) => item.sampleId === sampleId);
+    if (!sample) return;
+    sample.report = "已发布";
+    sample.status = "已发布";
+    saveLocalSamples();
+    byId("report-dialog").close();
+    renderAll();
+  });
+
+  byId("return-report").addEventListener("click", () => {
+    const sampleId = byId("report-dialog").dataset.sampleId;
+    const sample = state.samples.find((item) => item.sampleId === sampleId);
+    if (!sample) return;
+    sample.report = "待解读";
+    saveLocalSamples();
+    byId("report-dialog").close();
+    renderAll();
   });
 
   byId("close-detail").addEventListener("click", () => {

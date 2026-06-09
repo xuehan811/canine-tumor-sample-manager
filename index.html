@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Canis OncoTrack | 犬肿瘤基因检测样本信息管理</title>
-    <link rel="stylesheet" href="./styles.css?v=20260609-report-logic" />
+    <link rel="stylesheet" href="./styles.css?v=20260609-report-review" />
   </head>
   <body>
     <div class="app-shell">
@@ -326,6 +326,24 @@
       </form>
     </dialog>
 
+    <dialog id="report-dialog">
+      <form method="dialog" class="dialog-card report-review-dialog">
+        <div class="dialog-head">
+          <div>
+            <span id="report-review-status"></span>
+            <h2 id="report-review-title">报告审核</h2>
+            <p>LIMS 同步数据、临床信息、QC、变异结果和肿瘤基因解读库共同生成报告草稿。</p>
+          </div>
+          <button class="icon-btn" value="cancel" title="关闭">×</button>
+        </div>
+        <div id="report-review-content"></div>
+        <div class="dialog-actions">
+          <button class="btn secondary" type="button" id="return-report">退回解读</button>
+          <button class="btn primary" type="button" id="approve-report">通过审核并发布</button>
+        </div>
+      </form>
+    </dialog>
+
     <aside class="detail-panel" id="detail-panel" aria-hidden="true">
       <div class="detail-head">
         <div>
@@ -337,6 +355,6 @@
       <div id="detail-content"></div>
     </aside>
 
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260609-report-review"></script>
   </body>
 </html>
