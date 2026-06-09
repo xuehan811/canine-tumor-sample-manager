@@ -14,7 +14,8 @@ The web app is used for:
 - tracking sequencing, bioinformatics, QC, interpretation, and report status
 - showing backend-imported clinical exams, treatments, prognosis, and follow-up
 - managing variants and report review
-- generating structured report drafts and syncing released reports back to LIMS
+- generating structured report drafts from LIMS data, pipeline results, and the tumor gene interpretation library
+- syncing released reports back to LIMS
 - handling limited manual correction or exceptional补录
 
 ## Included Files
@@ -28,6 +29,7 @@ The web app is used for:
 - GitHub Pages static preview guide: `docs/github-pages.md`
 - LIMS sync guide: `docs/lims-sync.md`
 - Report generation workflow: `docs/report-generation.md`
+- Report generation 513 reference: `docs/report-generation-513-reference.md`
 - Data model guide: `docs/data-model.md`
 - API map: `docs/api-map.md`
 - Migration package manifest: `PACKAGE_MANIFEST.md`

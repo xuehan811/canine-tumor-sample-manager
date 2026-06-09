@@ -863,6 +863,35 @@ tbody tr:hover {
   gap: 12px;
 }
 
+.report-logic {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.report-logic article {
+  display: grid;
+  gap: 7px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--primary);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.report-logic b {
+  color: var(--primary-strong);
+  font-size: 13px;
+}
+
+.report-logic span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .report-flow {
   display: flex;
   align-items: center;

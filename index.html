@@ -257,7 +257,25 @@
           <div class="panel">
             <div class="panel-head">
               <h2>报告生成与审核</h2>
-              <span>LIMS + 临床信息 + QC + 变异解读 → 报告 → 回写 LIMS</span>
+              <span>LIMS 同步数据 + 肿瘤基因解读库 → 自动报告草稿 → 审核发布 → 回写 LIMS</span>
+            </div>
+            <div class="report-logic">
+              <article>
+                <b>LIMS 数据源</b>
+                <span>样本、犬只、项目、临床和检测状态来自 LIMS/后台导入</span>
+              </article>
+              <article>
+                <b>肿瘤基因解读库</b>
+                <span>按基因、变异、癌种、证据等级匹配报告解读文本</span>
+              </article>
+              <article>
+                <b>自动报告草稿</b>
+                <span>整合 QC、变异、临床背景和模板，生成待审核报告</span>
+              </article>
+              <article>
+                <b>发布回写</b>
+                <span>审核发布后同步报告结论、状态和文件编号至 LIMS</span>
+              </article>
             </div>
             <div class="report-flow">
               <span>未生成</span>
