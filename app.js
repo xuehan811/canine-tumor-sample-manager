@@ -1,4 +1,4 @@
-const STORAGE_KEY = "canis-oncotrack-samples-v1";
+const STORAGE_KEY = "canis-oncotrack-samples-v2-template-excel";
 const API_BASE = window.CANIS_API_BASE || "/api";
 
 const seedSamples = [
@@ -910,7 +910,7 @@ function setView(view) {
     samples: ["流程监控", "按样本、LIMS、批次、平台和分析状态监控质控、变异和报告流程。"],
     variants: ["变异结果", "快速查看每个样本的关键分子发现。"],
     clinical: ["临床信息", "展示后台导入的检查、治疗、预后和随访信息。"],
-    reports: ["报告生成", "按生成草稿、解读、审核、发布和同步 LIMS 的闭环管理报告。"]
+    reports: ["报告生成", "使用新版报告模板-TArgos.docx；LIMS 接入前可用 Excel 测试数据生成可编辑 Word 草稿。"]
   };
   byId("page-title").textContent = titles[view][0];
   byId("page-subtitle").textContent = titles[view][1];

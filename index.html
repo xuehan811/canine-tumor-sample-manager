@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Canis OncoTrack | 犬肿瘤基因检测样本信息管理</title>
-  <link rel="stylesheet" href="./styles.css?v=20260609-targos-template" />
+  <link rel="stylesheet" href="./styles.css?v=20260609-template-excel" />
   </head>
   <body>
     <div class="app-shell">
@@ -277,6 +277,23 @@
                 <span>审核发布后同步报告结论、状态和文件编号至 LIMS</span>
               </article>
             </div>
+            <div class="report-source-strip">
+              <div>
+                <span>当前正式模板</span>
+                <strong>新版报告模板-TArgos.docx</strong>
+                <small>来自项目内 `backend/samples/report_templates/新版报告模板-TArgos.docx`，审核时生成可编辑 Word 草稿。</small>
+              </div>
+              <div>
+                <span>临时测试数据</span>
+                <strong>肿瘤报告数据.xlsx</strong>
+                <small>LIMS 未接入前用于导入样本、临床、QC、变异和 VUS 结果。</small>
+              </div>
+              <div>
+                <span>临时解读库</span>
+                <strong>肿瘤基因解读库.xlsx</strong>
+                <small>用于填充后台肿瘤基因解读库，匹配报告解读文字。</small>
+              </div>
+            </div>
             <div class="report-flow">
               <span>未生成</span>
               <i></i>
@@ -356,6 +373,6 @@
       <div id="detail-content"></div>
     </aside>
 
-  <script src="./app.js?v=20260609-word-review"></script>
+  <script src="./app.js?v=20260609-template-excel"></script>
   </body>
 </html>

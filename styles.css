@@ -892,6 +892,40 @@ tbody tr:hover {
   line-height: 1.55;
 }
 
+.report-source-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.report-source-strip div {
+  display: grid;
+  gap: 5px;
+  min-height: 106px;
+  padding: 12px;
+  border: 1px solid #e4d8ce;
+  border-radius: 8px;
+  background: #fffaf6;
+}
+
+.report-source-strip span {
+  color: #9a7462;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.report-source-strip strong {
+  color: #463c35;
+  font-size: 14px;
+}
+
+.report-source-strip small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .report-flow {
   display: flex;
   align-items: center;
