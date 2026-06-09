@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Canis OncoTrack | 犬肿瘤基因检测样本信息管理</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" role="img">
+              <path d="M16 3 28 10v12L16 29 4 22V10L16 3Z" />
+              <path d="M10 17h12M16 11v12" />
+            </svg>
+          </div>
+          <div>
+            <strong>Canis OncoTrack</strong>
+            <span>犬肿瘤基因检测管理</span>
+          </div>
+        </div>
+        <nav class="nav" aria-label="主导航">
+          <button class="active" data-view="dashboard" title="工作台">
+            <span class="icon">⌂</span><span>工作台</span>
+          </button>
+          <button data-view="analysis" title="分析页">
+            <span class="icon">◫</span><span>分析页</span>
+          </button>
+          <button data-view="samples" title="流程监控">
+            <span class="icon">⌁</span><span>流程监控</span>
+          </button>
+          <button data-view="variants" title="变异结果">
+            <span class="icon">⌬</span><span>变异结果</span>
+          </button>
+          <button data-view="clinical" title="临床信息">
+            <span class="icon">☤</span><span>临床信息</span>
+          </button>
+          <button data-view="reports" title="报告队列">
+            <span class="icon">▤</span><span>报告队列</span>
+          </button>
+        </nav>
+        <div class="sidebar-footer">
+          <span>本地原型</span>
+          <strong>v0.1</strong>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1 id="page-title">工作台</h1>
+            <p id="page-subtitle">追踪犬肿瘤基因检测从收样到报告发布的全过程。</p>
+          </div>
+          <div class="top-actions">
+            <div class="search-wrap">
+              <span class="search-icon">⌕</span>
+              <input id="global-search" type="search" placeholder="搜索样本号、犬名、主人、癌种、基因" />
+            </div>
+            <button class="btn secondary" id="export-json" title="导出数据">导出</button>
+            <button class="btn primary" id="open-sample-form" title="同步 LIMS">同步 LIMS</button>
+          </div>
+        </header>
+
+        <section id="dashboard-view" class="view active-view">
+          <div class="metric-grid">
+            <article class="metric">
+              <span>样本总数</span>
+              <strong id="metric-total">0</strong>
+              <small>台账内全部检测样本</small>
+            </article>
+            <article class="metric">
+              <span>本周新增</span>
+              <strong id="metric-week">0</strong>
+              <small>按收样日期统计</small>
+            </article>
+            <article class="metric">
+              <span>待分析</span>
+              <strong id="metric-pending">0</strong>
+              <small>建库、测序或生信中</small>
+            </article>
+            <article class="metric warn">
+              <span>需复核</span>
+              <strong id="metric-review">0</strong>
+              <small>质控异常或报告待审</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>流程看板</h2>
+                <span>按当前状态</span>
+              </div>
+              <div class="pipeline" id="pipeline"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>今日优先处理</h2>
+                <span>自动按风险排序</span>
+              </div>
+              <div class="priority-list" id="priority-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="analysis-view" class="view">
+          <div class="analysis-grid">
+            <section class="panel span-2">
+              <div class="panel-head">
+                <h2>样本趋势</h2>
+                <span>按收样日期统计</span>
+              </div>
+              <div class="trend-chart" id="sample-trend"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>LIMS 同步</h2>
+                <span>主数据来源</span>
+              </div>
+              <div class="sync-card" id="lims-sync-card"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>癌种分布</h2>
+                <span>Top cancer types</span>
+              </div>
+              <div class="bar-list" id="tumor-distribution"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>检测项目</h2>
+                <span>Panel 占比</span>
+              </div>
+              <div class="bar-list" id="panel-distribution"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>质控概览</h2>
+                <span>QC status</span>
+              </div>
+              <div class="donut-wrap" id="qc-overview"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>报告周转</h2>
+                <span>队列压力</span>
+              </div>
+              <div class="report-summary" id="report-summary"></div>
+            </section>
+            <section class="panel span-2">
+              <div class="panel-head">
+                <h2>基因发现频次</h2>
+                <span>按关键变异聚合</span>
+              </div>
+              <div class="gene-frequency" id="gene-frequency"></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h2>异常样本</h2>
+                <span>需优先复核</span>
+              </div>
+              <div class="risk-list" id="risk-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="samples-view" class="view">
+          <div class="monitor-filter">
+            <label>样本ID<input id="filter-sample-id" type="search" placeholder="支持模糊匹配，可同时查询多个样本ID" /></label>
+            <label>LIMS ID<input id="filter-lims-id" type="search" placeholder="请输入 LIMS ID" /></label>
+            <label>测序平台<select id="filter-platform"><option value="all">请选择测序平台</option><option>MGI T7</option><option>Illumina NovaSeq</option><option>ONT</option></select></label>
+            <label>批次号<input id="filter-batch" type="search" placeholder="支持模糊搜索" /></label>
+            <label>下机日期<input id="filter-date" type="date" /></label>
+            <label>产品名<select id="tumor-filter" aria-label="产品筛选"><option value="all">全部产品</option></select></label>
+            <label>分析状态<select id="filter-analysis-status"><option value="all">请选择分析状态</option><option>收样</option><option>测序中</option><option>生信分析</option><option>报告审核</option><option>已发布</option></select></label>
+            <label>综合搜索<input id="filter-monitor-query" type="search" placeholder="在多个字段中模糊搜索" /></label>
+            <label class="wide">批量查询<input id="filter-batch-query" type="search" placeholder="根据文件路径或多个样本号批量查询样本ID" /></label>
+            <div class="monitor-filter-actions">
+              <button class="btn secondary" id="reset-monitor-filter">重置</button>
+              <button class="btn primary" id="run-monitor-search">搜索</button>
+            </div>
+          </div>
+
+          <div class="monitor-toolbar">
+            <div class="segmented" role="tablist" aria-label="流程状态筛选">
+              <button class="active" data-status="all">全部</button>
+              <button data-status="收样">收样</button>
+              <button data-status="测序中">测序中</button>
+              <button data-status="生信分析">生信分析</button>
+              <button data-status="报告审核">报告审核</button>
+              <button data-status="已发布">已发布</button>
+            </div>
+            <div class="monitor-actions">
+              <button class="btn primary">扫描下机数据</button>
+              <button class="btn secondary">提交分析</button>
+              <button class="btn secondary">更新样本产品</button>
+              <button class="icon-btn" title="刷新">↻</button>
+              <button class="icon-btn" title="下载">⇩</button>
+            </div>
+          </div>
+          <div class="table-shell">
+            <table class="monitor-table">
+              <thead>
+                <tr>
+                  <th><input type="checkbox" aria-label="全选" /></th>
+                  <th>样本号</th>
+                  <th>LIMS ID</th>
+                  <th>下机批次</th>
+                  <th>流程状态</th>
+                  <th>测序平台</th>
+                  <th>当前任务</th>
+                  <th>产品名称</th>
+                  <th>下机日期</th>
+                  <th>质控</th>
+                  <th>变异</th>
+                  <th>报告</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="sample-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="variants-view" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>关键变异汇总</h2>
+              <span>按样本聚合展示 SNV、CNV、融合和临床等级</span>
+            </div>
+            <div class="variant-grid" id="variant-grid"></div>
+          </div>
+        </section>
+
+        <section id="clinical-view" class="view">
+          <div class="clinical-layout">
+            <section class="panel clinical-index">
+              <div class="panel-head">
+                <h2>样本临床索引</h2>
+                <span>后台导入</span>
+              </div>
+              <div id="clinical-sample-list" class="clinical-sample-list"></div>
+            </section>
+            <section class="panel clinical-detail">
+              <div class="panel-head">
+                <h2 id="clinical-detail-title">临床信息</h2>
+                <span id="clinical-detail-source">请选择样本</span>
+              </div>
+              <div id="clinical-detail-content"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="reports-view" class="view">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>报告生成与审核</h2>
+              <span>LIMS + 临床信息 + QC + 变异解读 → 报告 → 回写 LIMS</span>
+            </div>
+            <div class="report-flow">
+              <span>未生成</span>
+              <i></i>
+              <span>待解读</span>
+              <i></i>
+              <span>待审核</span>
+              <i></i>
+              <span>已发布</span>
+              <i></i>
+              <span>已同步LIMS</span>
+            </div>
+            <div class="report-lanes" id="report-lanes"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="sample-dialog">
+      <form method="dialog" id="sample-form" class="dialog-card">
+        <div class="dialog-head">
+          <div>
+            <h2>LIMS 样本同步</h2>
+            <p>正式部署后样本信息从 LIMS 同步；这里保留手动补录入口用于演示和异常修正。</p>
+          </div>
+          <button class="icon-btn" value="cancel" title="关闭">×</button>
+        </div>
+        <div class="form-grid">
+          <label>样本号<input name="sampleId" required placeholder="TArgos0188-T" /></label>
+          <label>犬名<input name="dogName" required placeholder="雪球" /></label>
+          <label>品种<input name="breed" placeholder="金毛寻回犬" /></label>
+          <label>年龄<input name="age" placeholder="8岁" /></label>
+          <label>性别<select name="sex"><option>雌性</option><option>雄性</option><option>未知</option></select></label>
+          <label>主人/医院<input name="owner" placeholder="XX动物医院" /></label>
+          <label>癌种<input name="tumorType" required placeholder="肥大细胞瘤" /></label>
+          <label>取样部位<input name="site" placeholder="皮肤肿物" /></label>
+          <label>检测项目<select name="panel"><option>犬肿瘤154基因Panel</option><option>犬实体瘤热点Panel</option><option>全外显子辅助分析</option></select></label>
+          <label>收样日期<input name="receivedDate" type="date" required /></label>
+          <label>状态<select name="status"><option>收样</option><option>测序中</option><option>生信分析</option><option>报告审核</option><option>已发布</option></select></label>
+          <label>质控<select name="qc"><option>通过</option><option>待复核</option><option>失败</option></select></label>
+          <label class="wide">关键变异<input name="variants" placeholder="KIT p.D816V; TP53 p.R175H" /></label>
+          <label class="wide">备注<textarea name="notes" rows="3" placeholder="病理诊断、样本类型、复核意见"></textarea></label>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn secondary" value="cancel">取消</button>
+          <button class="btn primary" id="save-sample" value="default">保存补录</button>
+        </div>
+      </form>
+    </dialog>
+
+    <aside class="detail-panel" id="detail-panel" aria-hidden="true">
+      <div class="detail-head">
+        <div>
+          <span id="detail-status"></span>
+          <h2 id="detail-title"></h2>
+        </div>
+        <button class="icon-btn" id="close-detail" title="关闭">×</button>
+      </div>
+      <div id="detail-content"></div>
+    </aside>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
