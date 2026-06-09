@@ -30,6 +30,7 @@ The web app is used for:
 - LIMS sync guide: `docs/lims-sync.md`
 - Report generation workflow: `docs/report-generation.md`
 - TArgos interpretation workflow: `docs/targos-interpretation-workflow.md`
+- TArgos Word report template: `backend/samples/report_templates/新版报告模板-TArgos.docx`
 - Data model guide: `docs/data-model.md`
 - API map: `docs/api-map.md`
 - Migration package manifest: `PACKAGE_MANIFEST.md`
@@ -99,6 +100,7 @@ They are excluded in `.dockerignore` and `.gitignore`.
 - Implement the clinical information importer: HIS/EMR/LIMS/file import
 - Maintain the tumor gene interpretation library through Django admin or `python manage.py seed_interpretation_library`
 - Bulk import tumor gene interpretation rules with `python manage.py import_interpretation_json <path>`
+- For temporary testing before LIMS is connected, import TArgos Excel data with `python manage.py import_targos_interpretation_xlsx <xlsx>` and `python manage.py import_targos_report_excel <xlsx> --generate-reports`
 - Add scheduled sync task
 - Add operation/audit log for manual corrections
 - Add login and role permissions

@@ -1,6 +1,6 @@
 # TArgos Interpretation Workflow
 
-This document describes the project-owned interpretation workflow for canine tumor report generation. It is implemented in `backend/samples/interpretation_workflow.py` and is designed to use `新版报告模板-TArgos`.
+This document describes the project-owned interpretation workflow for canine tumor report generation. It is implemented in `backend/samples/interpretation_workflow.py` and is designed to use the Word template `backend/samples/report_templates/新版报告模板-TArgos.docx`.
 
 ## Design Principles
 
@@ -43,11 +43,17 @@ The backend interpretation library should maintain records with:
 
 Records should be editable through Django admin or batch import. Historical versions should be preserved by versioning instead of silent overwrite when the wording affects released reports.
 
+During the pre-LIMS test phase, the command below can populate this library from the current Excel workbook:
+
+```bash
+python manage.py import_targos_interpretation_xlsx "<path-to-肿瘤基因解读库.xlsx>"
+```
+
 ## Report Draft Contract
 
 The report draft payload should include:
 
-- `template`: `新版报告模板-TArgos`, version, file path, and template text
+- `template`: `新版报告模板-TArgos`, version, file path, and Word template metadata
 - `interpretation_workflow`: TArgos workflow ID, name, version, stages, and release gates
 - `interpretation_library`: match count and manual-review count
 - `sample`: LIMS sample and dog information
@@ -57,6 +63,12 @@ The report draft payload should include:
 - `conclusion`: generated draft conclusion
 - `word_report`: editable Word draft filename, format, status, and review-editing flag
 - `review_checklist`: release checklist for reviewers
+
+During the pre-LIMS test phase, the command below can import report test data and generate drafts:
+
+```bash
+python manage.py import_targos_report_excel "<path-to-肿瘤报告数据.xlsx>" --generate-reports
+```
 
 ## Manual Review Rules
 

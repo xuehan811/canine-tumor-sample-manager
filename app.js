@@ -558,7 +558,7 @@ function buildReportDraft(sample) {
     template,
     workflow: "TArgos 肿瘤基因解读流程 2026.06",
     templateVersion: "2026.06",
-    templateFile: "backend/samples/report_templates/targos_report_template.md",
+    templateFile: "backend/samples/report_templates/新版报告模板-TArgos.docx",
     wordFile: `${sample.sampleId}_TArgos_report_draft.docx`,
     library: "肿瘤基因解读库（后台维护）",
     conclusion: sample.qc === "通过" ? conclusion : `样本质控状态为${sample.qc}，正式发布前需完成复核。${conclusion}`,

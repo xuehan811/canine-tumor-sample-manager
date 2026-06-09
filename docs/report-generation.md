@@ -23,7 +23,7 @@ LIMS sample master data
 ```text
 backend/samples/interpretation_workflow.py
 backend/samples/reporting.py
-backend/samples/report_templates/targos_report_template.md
+backend/samples/report_templates/新版报告模板-TArgos.docx
 docs/targos-interpretation-workflow.md
 ```
 
@@ -161,7 +161,18 @@ POST /api/reports/{id}/sync-lims/
 GET/POST/PATCH/DELETE /api/tumor-gene-interpretations/
 ```
 
-The generated report is currently a structured JSON draft. A future iteration can render it to Word/PDF using `新版报告模板-TArgos`.
+The generated report draft is structured JSON plus a Word draft contract. The Word renderer should use `backend/samples/report_templates/新版报告模板-TArgos.docx`.
+
+## Temporary Excel Test Data
+
+Before the real LIMS connector is available, the project can use the current TArgos Excel files as test inputs:
+
+```bash
+python manage.py import_targos_interpretation_xlsx "<path-to-肿瘤基因解读库.xlsx>"
+python manage.py import_targos_report_excel "<path-to-肿瘤报告数据.xlsx>" --generate-reports
+```
+
+The first command imports the backend tumor gene interpretation library. The second command imports sample, clinical, QC, variant, VUS, and report draft test data.
 
 The review page should expose the generated Word report draft so reviewers can:
 
