@@ -73,7 +73,8 @@ The response contains report status, conclusion, and `draft_payload`.
 
 The draft payload now includes:
 
-- report template name (`报告生成-513`)
+- report template name (`新版报告模板-TArgos`)
+- interpretation workflow summary (`TArgos 肿瘤基因解读流程`)
 - interpretation library summary
 - matched interpretation records
 - unmatched variants requiring manual review

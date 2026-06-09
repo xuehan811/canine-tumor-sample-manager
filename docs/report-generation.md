@@ -1,30 +1,33 @@
 # Report Generation Workflow
 
-This workflow adapts the Mercury Manager report-generation idea and the `报告生成-513` reference flow to canine tumor genomic testing.
+This workflow defines the Canis OncoTrack automatic report-generation path for canine tumor genomic testing. It is self-contained in this project and uses `新版报告模板-TArgos`.
 
 ## Overall Chain
 
 ```text
 LIMS sample master data
-    ↓
-Wet lab and sequencing workflow
-    ↓
-Bioinformatics pipeline
-    ↓
-QC metrics + variant results
-    ↓
-Clinical information import
-    ↓
-Tumor gene interpretation library matching
-    ↓
-Automatic structured report draft
-    ↓
-Reviewer approval
-    ↓
-Report release
-    ↓
-Sync report status/result back to LIMS
+    -> wet lab and sequencing workflow
+    -> bioinformatics pipeline
+    -> QC metrics + variant results
+    -> clinical information import
+    -> tumor gene interpretation library matching
+    -> 新版报告模板-TArgos
+    -> automatic structured report draft
+    -> reviewer approval
+    -> report release
+    -> sync report status/result back to LIMS
 ```
+
+## Project-Owned Files
+
+```text
+backend/samples/interpretation_workflow.py
+backend/samples/reporting.py
+backend/samples/report_templates/targos_report_template.md
+docs/targos-interpretation-workflow.md
+```
+
+These files define the local report-generation contract. They should not depend on other report projects.
 
 ## Data Inputs
 
@@ -34,10 +37,10 @@ Sync report status/result back to LIMS
 | Clinical information | Backend import | Exams, pathology, treatment, prognosis, follow-up |
 | QC metrics | Sequencing or bioinformatics pipeline | Decide whether the sample is reportable |
 | Variant results | Bioinformatics pipeline | SNV, Indel, CNV, fusion and evidence tier |
-| Tumor gene interpretation library | Canis OncoTrack knowledge base | Approved gene/variant interpretation, evidence tier, clinical relevance and report text |
-| Report template | Canis OncoTrack | Product-specific report layout |
+| Tumor gene interpretation library | Canis OncoTrack backend | Approved gene/variant interpretation, evidence tier, clinical relevance and report text |
+| Report template | `新版报告模板-TArgos` | Product-specific report layout and section order |
 
-## 513-Inspired Automatic Report Logic
+## Automatic Report Logic
 
 The report should be generated from backend synchronized data, not from report fields manually typed in the web UI.
 
@@ -46,14 +49,14 @@ LIMS synchronized sample data
   + backend-imported clinical information
   + pipeline QC and variant results
   + tumor gene interpretation library
-  + product report template
-  -> report draft
+  + 新版报告模板-TArgos
+  -> editable Word report draft
   -> interpretation/reviewer queue
   -> released report
   -> LIMS callback
 ```
 
-The web page is mainly responsible for monitoring, reviewing, correcting exceptional cases, and releasing reports.
+The web page is responsible for monitoring, reviewing, correcting exceptional cases, and releasing reports.
 
 ## Tumor Gene Interpretation Library Matching
 
@@ -103,8 +106,8 @@ The report generator should group findings as:
 
 1. Clinically significant or actionable variants
 2. Prognostic or diagnostic supportive variants
-3. VUS or low-confidence findings
-4. CNV/fusion findings needing manual review
+3. CNV/fusion findings needing manual review
+4. VUS or low-confidence findings
 
 Each finding should include:
 
@@ -129,11 +132,7 @@ Clinical information is imported from backend sources and displayed in the repor
 ## Report Status Lifecycle
 
 ```text
-未生成
-  -> 待解读
-  -> 待审核
-  -> 已发布
-  -> 已同步LIMS
+未生成 -> 待解读 -> 待审核 -> 已发布 -> 已同步LIMS
 ```
 
 ## LIMS Callback
@@ -141,7 +140,9 @@ Clinical information is imported from backend sources and displayed in the repor
 After release, the report module should sync:
 
 - sample ID
+- LIMS ID
 - report status
+- template name and version
 - release time
 - report conclusion summary
 - report file URL or file ID
@@ -157,6 +158,15 @@ The current backend provides:
 POST /api/reports/generate/
 POST /api/reports/{id}/release/
 POST /api/reports/{id}/sync-lims/
+GET/POST/PATCH/DELETE /api/tumor-gene-interpretations/
 ```
 
-The generated report is currently a structured JSON draft. A future iteration can render it to Word/PDF using a template engine.
+The generated report is currently a structured JSON draft. A future iteration can render it to Word/PDF using `新版报告模板-TArgos`.
+
+The review page should expose the generated Word report draft so reviewers can:
+
+- view the report body before release
+- edit wording directly during review
+- download the draft as a Word-compatible file
+- lock the final version after approval
+- sync the released report file ID or URL back to LIMS

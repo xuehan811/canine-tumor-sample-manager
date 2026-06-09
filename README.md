@@ -29,7 +29,7 @@ The web app is used for:
 - GitHub Pages static preview guide: `docs/github-pages.md`
 - LIMS sync guide: `docs/lims-sync.md`
 - Report generation workflow: `docs/report-generation.md`
-- Report generation 513 reference: `docs/report-generation-513-reference.md`
+- TArgos interpretation workflow: `docs/targos-interpretation-workflow.md`
 - Data model guide: `docs/data-model.md`
 - API map: `docs/api-map.md`
 - Migration package manifest: `PACKAGE_MANIFEST.md`
@@ -98,6 +98,7 @@ They are excluded in `.dockerignore` and `.gitignore`.
 - Implement the real LIMS connector: API, read-only database, or file-drop import
 - Implement the clinical information importer: HIS/EMR/LIMS/file import
 - Maintain the tumor gene interpretation library through Django admin or `python manage.py seed_interpretation_library`
+- Bulk import tumor gene interpretation rules with `python manage.py import_interpretation_json <path>`
 - Add scheduled sync task
 - Add operation/audit log for manual corrections
 - Add login and role permissions

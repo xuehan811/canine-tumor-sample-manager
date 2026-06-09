@@ -552,10 +552,14 @@ function buildReportDraft(sample) {
   const conclusion = actionable.length
     ? `检出 ${actionable.length} 项具有潜在临床意义的肿瘤相关变异，建议结合病理诊断、分期、治疗史和随访计划综合解读。`
     : "本次检测未检出明确可报告的关键肿瘤相关变异，建议结合临床表现和病理结果持续随访。";
-  const template = "报告生成-513";
+  const template = "新版报告模板-TArgos";
 
   return {
     template,
+    workflow: "TArgos 肿瘤基因解读流程 2026.06",
+    templateVersion: "2026.06",
+    templateFile: "backend/samples/report_templates/targos_report_template.md",
+    wordFile: `${sample.sampleId}_TArgos_report_draft.docx`,
     library: "肿瘤基因解读库（后台维护）",
     conclusion: sample.qc === "通过" ? conclusion : `样本质控状态为${sample.qc}，正式发布前需完成复核。${conclusion}`,
     clinicalSummary: [
@@ -570,10 +574,100 @@ function buildReportDraft(sample) {
   };
 }
 
+function buildReportDocumentHtml(sample, draft) {
+  const clinical = sample.clinical || {};
+  const exams = clinical.exams || [];
+  const treatments = clinical.treatments || [];
+  const followUp = clinical.followUp || [];
+  return `
+    <article class="word-page">
+      <header class="word-cover">
+        <p>犬肿瘤基因检测报告</p>
+        <h1>${escapeHtml(draft.template)}</h1>
+        <span>${escapeHtml(sample.sampleId)} / ${escapeHtml(sample.limsId || "-")}</span>
+      </header>
+      <section>
+        <h2>一、基本信息</h2>
+        <table>
+          <tr><th>样本编号</th><td>${escapeHtml(sample.sampleId)}</td><th>LIMS ID</th><td>${escapeHtml(sample.limsId || "-")}</td></tr>
+          <tr><th>犬只姓名</th><td>${escapeHtml(sample.dogName)}</td><th>品种/年龄/性别</th><td>${escapeHtml(`${sample.breed} / ${sample.age} / ${sample.sex}`)}</td></tr>
+          <tr><th>送检单位</th><td>${escapeHtml(sample.owner)}</td><th>检测项目</th><td>${escapeHtml(sample.panel)}</td></tr>
+          <tr><th>肿瘤类型</th><td>${escapeHtml(sample.tumorType)}</td><th>取样部位</th><td>${escapeHtml(sample.site)}</td></tr>
+        </table>
+      </section>
+      <section>
+        <h2>二、临床信息</h2>
+        <p><b>临床诊断：</b>${escapeHtml(clinical.diagnosis || sample.tumorType || "暂缺")}</p>
+        <p><b>主诉：</b>${escapeHtml(clinical.complaint || "暂缺")}</p>
+        <p><b>预后/随访：</b>${escapeHtml(clinical.prognosis || "暂缺")}</p>
+        <ul>
+          ${exams.map((item) => `<li>${escapeHtml(item.date || "")} ${escapeHtml(item.type || "检查")}：${escapeHtml(item.result || "")}</li>`).join("") || "<li>暂无后台导入检查记录。</li>"}
+        </ul>
+      </section>
+      <section>
+        <h2>三、质控与检测结果</h2>
+        <p><b>质控状态：</b>${escapeHtml(sample.qc)}</p>
+        <p><b>流程状态：</b>${escapeHtml(sample.status)}；<b>报告状态：</b>${escapeHtml(sample.report)}</p>
+        <table>
+          <tr><th>变异</th><th>自动解读草稿</th></tr>
+          ${draft.variants.map((variant) => `<tr><td>${escapeHtml(variant.name)}</td><td>${escapeHtml(variant.interpretation)}</td></tr>`).join("")}
+        </table>
+      </section>
+      <section>
+        <h2>四、治疗与随访记录</h2>
+        <ul>
+          ${treatments.map((item) => `<li>${escapeHtml(item.date || "")}：${escapeHtml(item.plan || "")}</li>`).join("") || "<li>暂无后台导入治疗记录。</li>"}
+          ${followUp.map((item) => `<li>${escapeHtml(item.date || "")}：${escapeHtml(item.note || "")}</li>`).join("")}
+        </ul>
+      </section>
+      <section>
+        <h2>五、报告结论</h2>
+        <p>${escapeHtml(draft.conclusion)}</p>
+      </section>
+      <section>
+        <h2>六、限制说明</h2>
+        <p>本报告基于本次送检样本、LIMS 同步信息、后台导入临床资料、生信结果和后台维护的肿瘤基因解读库生成。犬肿瘤证据不足时，应结合病理、分期、治疗史和临床医生判断综合解释。</p>
+      </section>
+    </article>
+  `;
+}
+
+function downloadEditableWordReport() {
+  const sampleId = byId("report-dialog").dataset.sampleId;
+  const editor = byId("word-report-editor");
+  if (!sampleId || !editor) return;
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${escapeHtml(sampleId)} TArgos report draft</title>
+        <style>
+          body { font-family: "Microsoft YaHei", Arial, sans-serif; color: #1f2933; line-height: 1.6; }
+          h1 { font-size: 24px; text-align: center; }
+          h2 { font-size: 17px; border-bottom: 1px solid #d8dce4; padding-bottom: 4px; }
+          table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+          th, td { border: 1px solid #cfd5dd; padding: 6px 8px; vertical-align: top; }
+          th { background: #f5f2ed; }
+        </style>
+      </head>
+      <body>${editor.innerHTML}</body>
+    </html>
+  `;
+  const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${sampleId}_TArgos_report_draft.doc`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function openReportReview(sampleId) {
   const sample = state.samples.find((item) => item.sampleId === sampleId);
   if (!sample) return;
   const draft = buildReportDraft(sample);
+  const wordHtml = buildReportDocumentHtml(sample, draft);
   byId("report-review-title").textContent = `${sample.sampleId} · ${sample.dogName}`;
   byId("report-review-status").innerHTML = `<span class="badge ${badgeClass(sample.report)}">${escapeHtml(sample.report)}</span>`;
   byId("report-dialog").dataset.sampleId = sample.sampleId;
@@ -582,6 +676,10 @@ function openReportReview(sampleId) {
       <h3>报告来源</h3>
       <div class="review-grid">
         ${kv("模板", draft.template)}
+        ${kv("解读流程", draft.workflow)}
+        ${kv("模板版本", draft.templateVersion)}
+        ${kv("模板文件", draft.templateFile)}
+        ${kv("Word 草稿", draft.wordFile)}
         ${kv("解读库", draft.library)}
         ${kv("LIMS ID", sample.limsId || "-")}
         ${kv("检测项目", sample.panel)}
@@ -609,6 +707,13 @@ function openReportReview(sampleId) {
           </article>
         `).join("")}
       </div>
+    </section>
+    <section class="review-section">
+      <h3>Word 报告草稿</h3>
+      <div class="word-review-toolbar">
+        <span>可直接修改正文，下载后用 Word 打开继续编辑；正式部署时后端会渲染为 .docx。</span>
+      </div>
+      <div class="word-editor" id="word-report-editor" contenteditable="true" spellcheck="false">${wordHtml}</div>
     </section>
     <section class="review-section">
       <h3>审核清单</h3>
@@ -924,6 +1029,8 @@ function bindEvents() {
     byId("report-dialog").close();
     renderAll();
   });
+
+  byId("download-word-report").addEventListener("click", downloadEditableWordReport);
 
   byId("close-detail").addEventListener("click", () => {
     const panel = byId("detail-panel");
