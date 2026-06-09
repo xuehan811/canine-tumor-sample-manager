@@ -1,4 +1,4 @@
-const STORAGE_KEY = "canis-oncotrack-samples-v2-template-excel";
+const STORAGE_KEY = "canis-oncotrack-samples-v3-real-docx";
 const API_BASE = window.CANIS_API_BASE || "/api";
 
 const seedSamples = [
@@ -574,100 +574,19 @@ function buildReportDraft(sample) {
   };
 }
 
-function buildReportDocumentHtml(sample, draft) {
-  const clinical = sample.clinical || {};
-  const exams = clinical.exams || [];
-  const treatments = clinical.treatments || [];
-  const followUp = clinical.followUp || [];
-  return `
-    <article class="word-page">
-      <header class="word-cover">
-        <p>犬肿瘤基因检测报告</p>
-        <h1>${escapeHtml(draft.template)}</h1>
-        <span>${escapeHtml(sample.sampleId)} / ${escapeHtml(sample.limsId || "-")}</span>
-      </header>
-      <section>
-        <h2>一、基本信息</h2>
-        <table>
-          <tr><th>样本编号</th><td>${escapeHtml(sample.sampleId)}</td><th>LIMS ID</th><td>${escapeHtml(sample.limsId || "-")}</td></tr>
-          <tr><th>犬只姓名</th><td>${escapeHtml(sample.dogName)}</td><th>品种/年龄/性别</th><td>${escapeHtml(`${sample.breed} / ${sample.age} / ${sample.sex}`)}</td></tr>
-          <tr><th>送检单位</th><td>${escapeHtml(sample.owner)}</td><th>检测项目</th><td>${escapeHtml(sample.panel)}</td></tr>
-          <tr><th>肿瘤类型</th><td>${escapeHtml(sample.tumorType)}</td><th>取样部位</th><td>${escapeHtml(sample.site)}</td></tr>
-        </table>
-      </section>
-      <section>
-        <h2>二、临床信息</h2>
-        <p><b>临床诊断：</b>${escapeHtml(clinical.diagnosis || sample.tumorType || "暂缺")}</p>
-        <p><b>主诉：</b>${escapeHtml(clinical.complaint || "暂缺")}</p>
-        <p><b>预后/随访：</b>${escapeHtml(clinical.prognosis || "暂缺")}</p>
-        <ul>
-          ${exams.map((item) => `<li>${escapeHtml(item.date || "")} ${escapeHtml(item.type || "检查")}：${escapeHtml(item.result || "")}</li>`).join("") || "<li>暂无后台导入检查记录。</li>"}
-        </ul>
-      </section>
-      <section>
-        <h2>三、质控与检测结果</h2>
-        <p><b>质控状态：</b>${escapeHtml(sample.qc)}</p>
-        <p><b>流程状态：</b>${escapeHtml(sample.status)}；<b>报告状态：</b>${escapeHtml(sample.report)}</p>
-        <table>
-          <tr><th>变异</th><th>自动解读草稿</th></tr>
-          ${draft.variants.map((variant) => `<tr><td>${escapeHtml(variant.name)}</td><td>${escapeHtml(variant.interpretation)}</td></tr>`).join("")}
-        </table>
-      </section>
-      <section>
-        <h2>四、治疗与随访记录</h2>
-        <ul>
-          ${treatments.map((item) => `<li>${escapeHtml(item.date || "")}：${escapeHtml(item.plan || "")}</li>`).join("") || "<li>暂无后台导入治疗记录。</li>"}
-          ${followUp.map((item) => `<li>${escapeHtml(item.date || "")}：${escapeHtml(item.note || "")}</li>`).join("")}
-        </ul>
-      </section>
-      <section>
-        <h2>五、报告结论</h2>
-        <p>${escapeHtml(draft.conclusion)}</p>
-      </section>
-      <section>
-        <h2>六、限制说明</h2>
-        <p>本报告基于本次送检样本、LIMS 同步信息、后台导入临床资料、生信结果和后台维护的肿瘤基因解读库生成。犬肿瘤证据不足时，应结合病理、分期、治疗史和临床医生判断综合解释。</p>
-      </section>
-    </article>
-  `;
-}
-
 function downloadEditableWordReport() {
   const sampleId = byId("report-dialog").dataset.sampleId;
-  const editor = byId("word-report-editor");
-  if (!sampleId || !editor) return;
-  const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${escapeHtml(sampleId)} TArgos report draft</title>
-        <style>
-          body { font-family: "Microsoft YaHei", Arial, sans-serif; color: #1f2933; line-height: 1.6; }
-          h1 { font-size: 24px; text-align: center; }
-          h2 { font-size: 17px; border-bottom: 1px solid #d8dce4; padding-bottom: 4px; }
-          table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          th, td { border: 1px solid #cfd5dd; padding: 6px 8px; vertical-align: top; }
-          th { background: #f5f2ed; }
-        </style>
-      </head>
-      <body>${editor.innerHTML}</body>
-    </html>
-  `;
-  const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
+  if (!sampleId) return;
   const link = document.createElement("a");
-  link.href = url;
-  link.download = `${sampleId}_TArgos_report_draft.doc`;
+  link.href = "./assets/templates/新版报告模板-TArgos.docx";
+  link.download = `${sampleId}_新版报告模板-TArgos.docx`;
   link.click();
-  URL.revokeObjectURL(url);
 }
 
 function openReportReview(sampleId) {
   const sample = state.samples.find((item) => item.sampleId === sampleId);
   if (!sample) return;
   const draft = buildReportDraft(sample);
-  const wordHtml = buildReportDocumentHtml(sample, draft);
   byId("report-review-title").textContent = `${sample.sampleId} · ${sample.dogName}`;
   byId("report-review-status").innerHTML = `<span class="badge ${badgeClass(sample.report)}">${escapeHtml(sample.report)}</span>`;
   byId("report-dialog").dataset.sampleId = sample.sampleId;
@@ -709,11 +628,14 @@ function openReportReview(sampleId) {
       </div>
     </section>
     <section class="review-section">
-      <h3>Word 报告草稿</h3>
-      <div class="word-review-toolbar">
-        <span>可直接修改正文，下载后用 Word 打开继续编辑；正式部署时后端会渲染为 .docx。</span>
+      <h3>真实 Word 模板</h3>
+      <div class="template-download-card">
+        <div>
+          <b>新版报告模板-TArgos.docx</b>
+          <p>网页静态版不再用 HTML 仿造报告。正式部署时，后端会用这份真实 Word 模板填充 LIMS、临床、QC、变异和解读库字段，生成可审核修改的 .docx 报告。</p>
+        </div>
+        <a class="btn secondary" href="./assets/templates/新版报告模板-TArgos.docx" download="${escapeHtml(sample.sampleId)}_新版报告模板-TArgos.docx">下载真实模板</a>
       </div>
-      <div class="word-editor" id="word-report-editor" contenteditable="true" spellcheck="false">${wordHtml}</div>
     </section>
     <section class="review-section">
       <h3>审核清单</h3>
