@@ -417,6 +417,10 @@ h2 {
   cursor: pointer;
 }
 
+.mini-command.danger {
+  color: var(--danger);
+}
+
 .bar-list {
   display: grid;
   gap: 12px;
@@ -839,6 +843,72 @@ tbody tr:hover {
 
 .variant-card {
   padding: 14px;
+}
+
+.triage-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.triage-summary span {
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: #8c6a57;
+  background: #fff7f0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.triage-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.triage-list.full {
+  margin-top: 10px;
+}
+
+.triage-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--clay);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.triage-row.compact {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.triage-row b,
+.triage-row small {
+  display: block;
+}
+
+.triage-row small {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.triage-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.triage-actions .mini-command {
+  height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
 }
 
 .gene-row {
@@ -1417,6 +1487,10 @@ label.wide {
   .gene-frequency,
   .clinical-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .triage-row {
+    grid-template-columns: 1fr;
   }
 
   .clinical-timeline article {

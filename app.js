@@ -1,4 +1,4 @@
-const STORAGE_KEY = "canis-oncotrack-samples-v3-real-docx";
+const STORAGE_KEY = "canis-oncotrack-samples-v4-triage-review";
 const API_BASE = window.CANIS_API_BASE || "/api";
 
 const seedSamples = [
@@ -316,6 +316,111 @@ function parseVariant(text) {
   return { gene: gene || "NA", alteration, variant_type: variantType };
 }
 
+function variantKey(variant) {
+  return String(variant || "").trim();
+}
+
+function ensureReportVariantDecisions(sample) {
+  if (!sample.reportVariantDecisions || Array.isArray(sample.reportVariantDecisions)) {
+    sample.reportVariantDecisions = {};
+  }
+  sample.variants.forEach((variant) => {
+    const key = variantKey(variant);
+    if (!sample.reportVariantDecisions[key]) sample.reportVariantDecisions[key] = "review";
+  });
+  return sample.reportVariantDecisions;
+}
+
+function triageVariantName(variant, sample = {}) {
+  const text = String(variant || "");
+  const gene = text.trim().split(/\s+/)[0]?.toUpperCase() || "NA";
+  const isCnv = /loss|gain|amplification|amp|del|copy/i.test(text);
+  const isVus = /VUS|uncertain|意义不明/i.test(text);
+  const oncogenes = ["KIT", "BRAF", "EGFR", "ERBB2", "HER2", "MET", "NRAS", "PIK3CA", "ALK", "CCND1", "MYC"];
+  const suppressors = ["TP53", "PTEN", "CDKN2A", "RB1", "BRCA1", "BRCA2", "NF1", "APC", "SMAD4"];
+  let score = 20;
+  const reasons = [];
+  if (oncogenes.includes(gene)) {
+    score += 30;
+    reasons.push("常见肿瘤相关基因，需匹配解读库。");
+  }
+  if (suppressors.includes(gene)) {
+    score += 25;
+    reasons.push("抑癌/修复相关基因，需关注失活或缺失证据。");
+  }
+  if (/D816|V588|H1047|Q61|R175|R273/i.test(text)) {
+    score += 25;
+    reasons.push("变异形式类似热点或高关注位点。");
+  }
+  if (isCnv) {
+    score += 10;
+    reasons.push("CNV 需要结合拷贝数阈值、基因功能和样本 QC 复核。");
+  }
+  if (isVus) {
+    score -= 30;
+    reasons.push("注释为 VUS 或意义未明，不应自动写入报告。");
+  }
+  if (sample.qc && sample.qc !== "通过") {
+    score -= 10;
+    reasons.push("样本 QC 未完全通过，报告写入前需复核。");
+  }
+  const status = score >= 70 ? "candidate" : score >= 40 ? "needs_review" : "excluded";
+  const labels = {
+    candidate: "候选写入",
+    needs_review: "待人工复核",
+    excluded: "暂不写入"
+  };
+  return {
+    gene,
+    score: Math.max(0, Math.min(100, score)),
+    status,
+    label: labels[status],
+    reason: reasons.join(" ") || "缺少足够可报告证据，保留为全量检测记录。"
+  };
+}
+
+function triageBadgeClass(status) {
+  if (status === "candidate") return "good";
+  if (status === "needs_review") return "warn";
+  if (status === "excluded") return "bad";
+  return "";
+}
+
+function decisionLabel(decision) {
+  return {
+    include: "确认写入报告",
+    exclude: "人工排除",
+    review: "待复核"
+  }[decision] || "待复核";
+}
+
+function reportableVariants(sample) {
+  const decisions = ensureReportVariantDecisions(sample);
+  return sample.variants.filter((variant) => decisions[variantKey(variant)] === "include");
+}
+
+function triageRows(sample, compact = false) {
+  const decisions = ensureReportVariantDecisions(sample);
+  return sample.variants.map((variant) => {
+    const triage = triageVariantName(variant, sample);
+    const decision = decisions[variantKey(variant)] || "review";
+    return `
+      <article class="triage-row ${compact ? "compact" : ""}">
+        <div>
+          <b>${escapeHtml(variant)}</b>
+          <small>${escapeHtml(triage.reason)}</small>
+        </div>
+        <span class="badge ${triageBadgeClass(triage.status)}">${escapeHtml(triage.label)} · ${triage.score}</span>
+        <span class="badge ${decision === "include" ? "good" : decision === "exclude" ? "bad" : "warn"}">${escapeHtml(decisionLabel(decision))}</span>
+        <div class="triage-actions">
+          <button type="button" class="mini-command" data-triage-approve="${escapeHtml(sample.sampleId)}" data-variant="${escapeHtml(variant)}">确认写入</button>
+          <button type="button" class="mini-command danger" data-triage-exclude="${escapeHtml(sample.sampleId)}" data-variant="${escapeHtml(variant)}">排除</button>
+        </div>
+      </article>
+    `;
+  }).join("") || `<div class="empty-note">暂无 LIMS 同步突变</div>`;
+}
+
 function byId(id) {
   return document.getElementById(id);
 }
@@ -455,9 +560,11 @@ function renderVariants() {
     <article class="variant-card">
       <strong>${escapeHtml(sample.sampleId)} · ${escapeHtml(sample.tumorType)}</strong>
       <small>${escapeHtml(sample.dogName)} / ${escapeHtml(sample.panel)}</small>
-      <div class="gene-row">
-        ${sample.variants.map((variant) => `<span class="gene-chip">${escapeHtml(variant)}</span>`).join("")}
+      <div class="triage-summary">
+        <span>全量突变 ${sample.variants.length}</span>
+        <span>确认写入 ${reportableVariants(sample).length}</span>
       </div>
+      <div class="triage-list">${triageRows(sample, true)}</div>
     </article>
   `).join("");
 }
@@ -547,11 +654,11 @@ function reportActionText(status) {
 
 function buildReportDraft(sample) {
   const clinical = sample.clinical || {};
-  const keyVariants = sample.variants.length ? sample.variants : ["未检出明确可报告关键变异"];
-  const actionable = sample.variants.filter((variant) => !/VUS|uncertain/i.test(variant));
-  const conclusion = actionable.length
-    ? `检出 ${actionable.length} 项具有潜在临床意义的肿瘤相关变异，建议结合病理诊断、分期、治疗史和随访计划综合解读。`
-    : "本次检测未检出明确可报告的关键肿瘤相关变异，建议结合临床表现和病理结果持续随访。";
+  const keyVariants = reportableVariants(sample);
+  const pendingCount = sample.variants.length - keyVariants.length;
+  const conclusion = keyVariants.length
+    ? `检出 ${keyVariants.length} 项经人工确认写入报告的肿瘤相关变异，建议结合病理诊断、分期、治疗史和随访计划综合解读。`
+    : "已同步全量突变结果，但尚无人工确认写入报告的突变；需先完成初筛复核后再生成正式结论。";
   const template = "新版报告模板-TArgos";
 
   return {
@@ -561,15 +668,18 @@ function buildReportDraft(sample) {
     templateFile: "backend/samples/report_templates/新版报告模板-TArgos.docx",
     wordFile: `${sample.sampleId}_TArgos_report_draft.docx`,
     library: "肿瘤基因解读库（后台维护）",
+    reportableSelection: `LIMS 全量突变 ${sample.variants.length} 项；确认写入 ${keyVariants.length} 项；待复核/排除 ${pendingCount} 项。`,
     conclusion: sample.qc === "通过" ? conclusion : `样本质控状态为${sample.qc}，正式发布前需完成复核。${conclusion}`,
     clinicalSummary: [
       clinical.diagnosis && `临床诊断：${clinical.diagnosis}`,
       clinical.complaint && `主诉：${clinical.complaint}`,
       clinical.prognosis && `预后/随访：${clinical.prognosis}`
     ].filter(Boolean).join("；") || "暂无后台导入的临床摘要。",
-    variants: keyVariants.map((variant) => ({
+    variants: (keyVariants.length ? keyVariants : ["暂无人工确认写入报告的变异"]).map((variant) => ({
       name: variant,
-      interpretation: `${variant} 已进入肿瘤基因解读库匹配流程，报告草稿将结合癌种、证据等级、犬种适用性和临床背景生成解读。`
+      interpretation: keyVariants.length
+        ? `${variant} 已通过写入报告复核，并进入肿瘤基因解读库匹配流程；报告草稿将结合癌种、证据等级、犬种适用性和临床背景生成解读。`
+        : "请先在上方人工复核模块确认需要写入报告的突变。"
     }))
   };
 }
@@ -613,6 +723,11 @@ function openReportReview(sampleId) {
       <p>${escapeHtml(draft.conclusion)}</p>
     </section>
     <section class="review-section">
+      <h3>写入报告突变筛选</h3>
+      <p>${escapeHtml(draft.reportableSelection)}</p>
+      <div class="triage-list full">${triageRows(sample)}</div>
+    </section>
+    <section class="review-section">
       <h3>临床摘要</h3>
       <p>${escapeHtml(draft.clinicalSummary)}</p>
     </section>
@@ -642,7 +757,7 @@ function openReportReview(sampleId) {
       <div class="review-checklist">
         <label><input type="checkbox" checked /> LIMS 样本信息已核对</label>
         <label><input type="checkbox" checked /> QC 可报告性已确认</label>
-        <label><input type="checkbox" ${sample.variants.length ? "checked" : ""} /> 关键变异已完成解读库匹配</label>
+        <label><input type="checkbox" ${reportableVariants(sample).length ? "checked" : ""} /> 写入报告突变已人工复核</label>
         <label><input type="checkbox" /> 审核人已确认报告结论和限制说明</label>
       </div>
     </section>
@@ -912,6 +1027,28 @@ function bindEvents() {
   });
 
   document.body.addEventListener("click", (event) => {
+    const approveTriage = event.target.closest("[data-triage-approve]");
+    if (approveTriage) {
+      const sample = state.samples.find((item) => item.sampleId === approveTriage.dataset.triageApprove);
+      if (sample) {
+        ensureReportVariantDecisions(sample)[approveTriage.dataset.variant] = "include";
+        saveLocalSamples();
+        renderAll();
+        if (byId("report-dialog").open) openReportReview(sample.sampleId);
+      }
+      return;
+    }
+    const excludeTriage = event.target.closest("[data-triage-exclude]");
+    if (excludeTriage) {
+      const sample = state.samples.find((item) => item.sampleId === excludeTriage.dataset.triageExclude);
+      if (sample) {
+        ensureReportVariantDecisions(sample)[excludeTriage.dataset.variant] = "exclude";
+        saveLocalSamples();
+        renderAll();
+        if (byId("report-dialog").open) openReportReview(sample.sampleId);
+      }
+      return;
+    }
     if (event.target.closest("#mock-lims-sync")) {
       setView("analysis");
       alert("正式部署后可通过 POST /api/lims/sync/ 或 sync_lims_json 命令同步 LIMS 样本。");
